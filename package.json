@@ -1,0 +1,43 @@
+{
+    "name": "zoetropic",
+    "version": "0.0.1",
+    "description": "A value-oriented backend library",
+    "author": "Kenneth Knowles <kenn.knowles@gmail.com> (http://kennknowles.com)",
+    "license": "Apache 2.0",
+    "homepage": "https://github.com/kennknowles/zoetropic.js",
+    "keywords": [
+        "REST",
+        "Backbone",
+        "Promise"
+    ],
+    "issues": {
+        "url": "https://github.com/kennknowles/zoetropic.js/issues"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/kennknowles/zoetropic.js.git"
+    },
+    "dependencies": {
+        "amdefine": ">=0.0.4",
+        "backbone": ">=0.9",
+        "contracts-js": ">=0.3.3",
+        "requirejs": ">=2.0",
+        "underscore":  ">=1.4",
+        "URIjs": ">=1.10",
+        "when": ">=2.0.1"
+    },
+    "devDependencies": {
+        "chai": ">=1.5.0",
+        "claire": ">=0.3.2",
+        "istanbul": ">=0.1.34",
+        "jshint": ">=1.1.0",
+        "mocha": ">=1.9.0",
+        "mocha-istanbul": ">=0.2.0",
+        "sinon": ">=1.6.0"
+    },
+    "files": ["src/zoetropic.js"],
+    "main": "src/zoetropic",
+    "scripts": {
+        "test": "make test"
+    }
+}
