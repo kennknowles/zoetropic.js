@@ -46,18 +46,18 @@ define([
             });
 
             expect(c.models['/fake/uri/1'].attributes.bizzle).to.equal('bozzle'); // sanity check
-            expect(c.models['/fake/uri/1'].relationships('foo')).to.equal(undefined);
+            expect(c.models['/fake/uri/1'].relationships.foo).to.equal(undefined);
             
             var c2 = zt.LocalCollection();
-            var c3 = c.overlayRelationships(function(attr) {
-                return {
-                    link: zt.UrlLink({from: 'bizzle'})(zt.LinkToCollection(c2))
-                };
+            var c3 = c.overlayRelationships({
+                bizzle: { link: zt.UrlLink({from: 'bizzle'})(zt.LinkToCollection(c2)) },
+                foo: { link: zt.UrlLink({from: 'foo'})(zt.LinkToCollection(c2)) }
             });
 
-            expect(c3.relationships('bizzle')).to.be.ok;
+            expect(c3.relationships.bizzle).to.be.ok;
+            expect(c3.relationships.foo).to.be.ok;
             expect(c3.models['/fake/uri/1'].attributes.bizzle).to.equal('bozzle'); // sanity check
-            expect(c3.models['/fake/uri/1'].relationships('foo').link.resolve(c).uri).to.equal(c2.uri);
+            expect(c3.models['/fake/uri/1'].relationships.foo.link.resolve(c).uri).to.equal(c2.uri);
         });
     });
 });

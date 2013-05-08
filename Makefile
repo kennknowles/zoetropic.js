@@ -32,7 +32,7 @@ test: jshint
 
 .PHONY: coverage
 coverage: jshint lib-cov
-	ZOETROPIC_PATH=lib-cov/zoetropic $(MOCHA) --reporter mocha-istanbul ./spec/mocha-spec-runner.js
+	ISTANBUL_REPORTERS=text-summary,html,lcov ZOETROPIC_PATH=lib-cov/zoetropic $(MOCHA) --reporter mocha-istanbul ./spec/mocha-spec-runner.js
 
 #
 # Actual file targets

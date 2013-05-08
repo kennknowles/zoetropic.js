@@ -61,7 +61,7 @@ define([
         //
         // A name used in debugging messages
         
-        self.name = implementation.name || "(anonymous Model)";
+        self.name = implementation.name || "(anonymous zoetropic.Model)";
 
 
         ///// debug :: Boolean
@@ -99,7 +99,7 @@ define([
         // A function that maps each attribute to the Relationship
         // between collections for that attribute.
 
-        self.relationships = implementation.relationships || die('Model implementation missing mandatory field `relationships`');
+        self.relationships = _(implementation.relationships).isObject() ? implementation.relationships : die('Model implementation missing mandatory field `relationships`');
 
         
         ///// fetch :: () -> Promise Model
@@ -134,7 +134,7 @@ define([
         // Overlays the provided relationship function to this model.
 
         self.overlayRelationships = function(additionalRelationships) {
-            return self.withFields({ relationships: function(attr) { return additionalRelationships(attr) || self.relationships(attr); } });
+            return self.withFields({ relationships: _({}).extend(self.relationships, additionalRelationships) });
         };
         
         
@@ -178,21 +178,21 @@ define([
             var overlayedAttributes = {};
 
             _(overlayedCollections).each(function(collection, attribute) {
-                var relationship = self.relationships(attribute) || { deref: ToOneReference({from: attribute}) };
+                var relationship = self.relationships[attribute] || { deref: ToOneReference({from: attribute}) };
 
                 overlayedAttributes[attribute] = relationship.deref(self, collection);
             });
             
             return self.overlayAttributes(overlayedAttributes).withFields({
-                fetch: function() {
-                    self.fetch()
+                fetch: function(options) {
+                    self.fetch(options)
                         .then(function(fetchedSelf) {
                             return when.resolve(fetchedSelf.overlayRelated(overlayedCollections));
                         });
                 },
                 
-                save: function(attributes) {
-                    self.save(attributes)
+                save: function(attributes, options) {
+                    self.save(attributes, options)
                         .then(function(savedSelf) {
                             return when.resolve(savedSelf.overlayRelated(overlayCollections));
                         });
@@ -216,7 +216,7 @@ define([
                 models: _.object( [self.uri, self] )
             });
 
-            var dst = self.relationships(attr).link.resolve(justThisModelCollection);
+            var dst = self.relationships[attr].link.resolve(justThisModelCollection);
 
             return dst;
         };
@@ -291,16 +291,16 @@ define([
         args = args || {};
             
         self.uri = args.uri || ('fake:' + Math.random(1000).toString());
-        self.name = args.name || "(anonymous LocalModel)";
+        self.name = args.name || "(anonymous zoetropic.LocalModel)";
         self.debug = args.debug || false;
         self.attributes = args.attributes || {};
         self.errors = args.errors || {};
 
-        self.relationships = args.relationships || function(attr) { return undefined; };
+        self.relationships = args.relationships || {};
 
-        self.fetch = function() { return when.resolve(self); };
+        self.fetch = function(options) { return when.resolve(self); };
 
-        self.save = function(attributes) { return when.resolve(Model(self).withFields({ attributes: attributes })); };
+        self.save = function(attributes, options) { return when.resolve(Model(self).withFields({ attributes: attributes })); };
 
         Object.freeze(self);
 
@@ -320,7 +320,7 @@ define([
         self.uri = args.uri;
         self.name = args.name;
         self.debug = args.debug || false;
-        self.relationships = args.relationships || function(attr) { return undefined; };
+        self.relationships = args.relationships || {};
 
         self.attributes = args.attributes || {};
         self.errors = args.errors || {};
@@ -329,8 +329,8 @@ define([
         var BB = args.Backbone || Backbone;
         var BBModelClass = BB.Model.extend({ url: self.uri });
 
-        var fetchWithSelf = function(self) {
-            if (self.debug) console.log(self.name, '-->');
+        var fetchWithSelf = function(self, options) {
+            if (self.debug) console.debug( (options && options.name) || self.name, '-->');
             var doneFetching = when.defer();
             var bbModel = new BBModelClass();
 
@@ -348,8 +348,8 @@ define([
             return doneFetching.promise;
         };
 
-        var saveWithSelf = function(self, attributes) {
-            if (self.debug) console.log(self.name, '==>', attributes);
+        var saveWithSelf = function(self, attributes, options) {
+            if (self.debug) console.debug( (options && options.name) || self.name, '==>', attributes);
             var doneSaving = when.defer();
 
             var bbModel = new BBModelClass(attributes);
@@ -366,9 +366,9 @@ define([
             return doneSaving.promise;
         };
         
-        self.fetch = function() { return fetchWithSelf(self); }
+        self.fetch = function(options) { return fetchWithSelf(self, options); }
 
-        self.save = function(attributes) { return saveWithSelf(self, attributes); }
+        self.save = function(attributes, options) { return saveWithSelf(self, attributes, options); }
         
         return Model(self);
     };
@@ -388,7 +388,7 @@ define([
         //
         // For debugging, etc
 
-        self.name = implementation.name || '(anonymous Collection)';
+        self.name = implementation.name || '(anonymous zoetropic.Collection)';
 
 
         ///// uri :: String
@@ -400,13 +400,12 @@ define([
         self.uri = implementation.uri || die('Collection implementation missing required field `uri`.');
 
 
-        ///// relationships :: String -> Relationship | undefined
+        ///// relationships :: {String: Relationship} 
         //
         // For each attribute of the models in the collection, there may 
-        // be a relationship defined or no. It is a function rather 
-        // than a dictionary to allow more implementation strategies.
+        // be a relationship defined or no.
         
-        self.relationships = implementation.relationships || die('Collection implementation missing required field `relationships`.');
+        self.relationships = _(implementation.relationships).isObject() ? implementation.relationships : die('Collection implementation missing required field `relationships`.');
 
 
         ///// data :: Observable {String: *}
@@ -416,7 +415,7 @@ define([
         // simply uninterpreted by the Collection class, but passed to
         // the underlying `fetch` implementation.
 
-        self.data = implementation.data || die('Collection implementation missing required field `data`');
+        self.data = _(implementation.data).isObject() ? implementation.data : die('Collection implementation missing required field `data`');
 
         
         ///// models :: Models
@@ -424,7 +423,7 @@ define([
         // A collection of models by URI that supports intelligent
         // bulk update and relationships.
 
-        self.models = implementation.models || die('Collection implementation missing required field `models`');
+        self.models = _(implementation.models).isObject() ? implementation.models : die('Collection implementation missing required field `models`');
 
         
         ///// fetch :: () -> Promise Collection
@@ -463,8 +462,8 @@ define([
         // provided attribute.
 
         self.relatedCollection = function(attr) { 
-            var rel = self.relationships(attr) || die('No known relationship for ' + self.name + ' via attribute ' + attr);
-            return self.relationships(attr).link.resolve(self).withFields({ name: self.name + '.' + attr });
+            var rel = self.relationships[attr] || die('No known relationship for ' + self.name + ' via attribute ' + attr);
+            return rel.link.resolve(self).withFields({ name: self.name + '.' + attr });
         };
         
        
@@ -484,12 +483,10 @@ define([
         // This collection with additional relationships 
 
         self.overlayRelationships = function(additionalRelationships) {
-            var combinedRelationships = function(attr) { return additionalRelationships(attr) || self.relationships(attr); };
+            var combinedRelationships = _({}).extend(self.relationships, additionalRelationships);
 
             return self.withFields({
-                models: _(self.models).mapValues(function(model) {
-                    return model.overlayRelationships(additionalRelationships);
-                }),
+                models: _(self.models).mapValues(function(model) { return model.overlayRelationships(additionalRelationships); }),
                 relationships: combinedRelationships 
             });
         };
@@ -544,9 +541,9 @@ define([
         self.name = args.name || 'LocalCollection({uri:'+self.uri+'})';
         self.data = args.data || {},
         self.models = args.models || {},
-        self.fetch = function(data) { return when.resolve(self); };
+        self.fetch = function(data, options) { return when.resolve(self); };
         self.create = function(modelArgs) { return when.resolve(LocalModel(modelArgs)); }
-        self.relationships = args.relationships || function(attr) { return undefined; };
+        self.relationships = args.relationships || {};
 
         return Collection(self);
     };
@@ -562,11 +559,11 @@ define([
         var self = this;
         
         self.uri = args.uri;
-        self.name = args.name || "(anonymous RemoteCollection)";
+        self.name = args.name || "(anonymous zoetropic.RemoteCollection)";
         self.debug = args.debug || false;
         self.data = args.data || {};
         self.models = args.models || {};
-        self.relationships = args.relationships || function(attr) { return undefined; }; // TODO: backend should not have relationships
+        self.relationships = args.relationships || {};
 
         // Dependency injected Backbone for doing the actual HTTP biz
         var BB = args.Backbone || Backbone; // For swapping out network library if desired, and for testing
@@ -592,17 +589,17 @@ define([
         //
         // A promise that resolves to this collection with the fetched models.
     
-        self.fetch = function(data) {
+        self.fetch = function(data, options) {
             data = data || {};
 
-            if (self.debug) console.log(self.name, '-->', self.uri, '?', data); //URI().query(self.data()).query());
+            if (self.debug) console.debug((options && options.name) || self.name, '-->', self.uri, '?', data); //URI().query(self.data()).query());
             
             // The special value NOFETCH is used to indicate with certainty that the result
             // of the fetch will be empty, so we should elide hitting the network. This occurs
             // somewhat often during automatic dependency propagation and is no problem.
 
             if (_(data).any(function(v) { return v === NOFETCH; })) {
-                if (self.debug) console.log(self.name, '<--', self.uri, '(not bothering)');
+                if (self.debug) console.debug((options && options.name) || self.name, '<--', self.uri, '(not bothering)');
                 return when.resolve(self.withFields({ models: {} })); // Equivalent to having fetched instantaneously and gotten no results
             }
             
@@ -617,7 +614,7 @@ define([
                 traditional: true,
                 data: data,
                 success: function(collection, response) { 
-                    if (self.debug) console.log(self.name, '<--', '(' + _(collection.models).size() + ' results)');
+                    if (self.debug) console.debug((options && options.name) || self.name, '<--', '(' + _(collection.models).size() + ' results)');
                     
                     var newModels = {};
                 
@@ -653,13 +650,13 @@ define([
             var doneCreating = when.defer();
             
             var payload = toJValue(LocalModel(args));
-            if (self.debug) console.log(self.name, '==>', payload);
+            if (self.debug) console.debug(self.name, '==>', payload);
             
             var bbCollection = new BBCollectionClass();
             bbCollection.create(payload, {
                 wait: true,
                 success: function(newModel, response, options) { 
-                    if (self.debug) console.log(self.name, '<==', newModel);
+                    if (self.debug) console.debug(self.name, '<==', newModel);
 
                     var createdModel = modelInThisCollection({ 
                         uri: newModel.get('resource_uri'), // Requires tastypie always_return_data = True; could/should fallback on Location header
@@ -891,14 +888,15 @@ define([
 
         var self = this;
 
+        self.uri = implementation.uri || die('Api implementation missing required field `uri`');
         self.debug = implementation.debug || false;
-        self.name = implementation.name || '(anonymous Api)';
+        self.name = implementation.name || '(anonymous zoetropic.Api)';
 
         ///// collections :: {String: Collection}
         //
         // A dictionary of collections by name.
 
-        self.collections = implementation.collections || die('Api implementation missing required field `collections`');
+        self.collections = _(implementation.collections).isObject() ? implementation.collections : die('Api implementation missing required field `collections`');
 
         
         ///// fetch :: () -> Promise Api
@@ -930,7 +928,7 @@ define([
         // This Api with some more collections
 
         self.overlayCollections = function(additionalCollections) {
-            self.withFields({ collections: _({}).extend(self.collections, additionalCollections) });
+            return self.withFields({ collections: _({}).extend(self.collections, additionalCollections) });
         };
         
         
@@ -961,7 +959,7 @@ define([
 
                     // Default to a UrlLink/ToOneReference so that { collection: 'name' } immedately works.
                     var deref = relationshipDescriptor.deref || ToOneReference({from: attribute});
-                    var linkTransform = relationshipDescriptor.link || UrlLInk({from: attribute});
+                    var linkTransform = relationshipDescriptor.link || UrlLink({from: attribute});
                     
                     // Kick type the resulting link
                     var link = linkTransform(linkToDestination);
@@ -976,14 +974,14 @@ define([
             });
 
             _(self.collections).each(function(collection, name) {
-                newCollections[name] = collection.overlayRelationships(function(attr) { return constructedRelationships[name][attr]; });
+                newCollections[name] = collection.overlayRelationships(constructedRelationships[name]);
             });
 
             return self.withFields({
                 collections: newCollections,
 
-                fetch: function() { 
-                    return self.fetch().then(function(newSelf) {
+                fetch: function(options) { 
+                    return self.fetch(options).then(function(newSelf) {
                         return when.resolve(newSelf.overlayRelationships(additionalRelationships));
                     });
                 }
@@ -1004,9 +1002,10 @@ define([
 
         var self = this;
 
+        self.uri = args.uri || ('fake:' + Math.random());
         self.debug = args.debug || false;
-        self.name = args.name || '(anonymous LocalApi)';
-        self.fetch = args.fetch || function() { return when.resolve(self); };
+        self.name = args.name || '(anonymous zoetropic.LocalApi)';
+        self.fetch = args.fetch || function(options) { return when.resolve(self); };
         self.collections = args.collections;
         self.relationships = _(args.relationships || {}).mapValues(function(relationshipsForCollection) {
             return _(relationshipsForCollection).mapValues(function(relationship, attribute) {
@@ -1033,8 +1032,8 @@ define([
         self.uri = args.uri || die('Missing required argument `uri` for RemoteApi');
 
         self.debug = args.debug || false;
-        self.collections = Collections({ debug: self.debug, relationships: args.relationships });
-        self.name = args.name || '(anonymous RemoteApi)';
+        self.collections = args.collections || {};
+        self.name = args.name || '(anonymous zoetropic.RemoteApi)';
         self.relationships = args.relationships || {};
 
         ///// fetch
@@ -1047,17 +1046,17 @@ define([
 
         var BBModelClass = Backbone.Model.extend({ url: self.uri });
 
-        self.fetch = function() {
+        self.fetch = function(options) {
             var doneFetching = when.defer();
             var bbModel = new BBModelClass();
 
-            if (self.debug) console.log(self.name, '-->', self.uri);
+            if (self.debug) console.debug((options && options.name) || self.name, '-->', self.uri);
             
             bbModel.fetch({
                 success: function(bbModelFromServer, response) { 
-                    if (self.debug) console.log(self.name, '<--', self.uri);
+                    if (self.debug) console.debug((options && options.name) || self.name, '<--', self.uri);
                     
-                    var additionalCollections = _(bbModelFromServer).mapValues(function(metadata) {
+                    var additionalCollections = _(bbModelFromServer.attributes).mapValues(function(metadata) {
                         return RemoteCollection({ 
                             name: name,
                             debug: self.debug,
@@ -1066,7 +1065,7 @@ define([
                         });
                     });
 
-                    doneFetching.resolve(self.overlayCollections(additionalCollections));
+                    doneFetching.resolve(Api(self).overlayCollections(additionalCollections));
                 },
                 error: function() {
                     doneFetching.reject();
@@ -1076,7 +1075,7 @@ define([
             return doneFetching.promise;
         };
 
-        return Api(self).overlayrelationships(self.relationships);
+        return Api(self).overlayRelationships(self.relationships);
     };
 
 

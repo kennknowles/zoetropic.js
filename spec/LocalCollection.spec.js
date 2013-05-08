@@ -22,7 +22,7 @@ define([
                 models: {
                     0: ss.LocalModel()
                 }
-            }).overlayRelationships(function(attr) { return { link: ss.LinkToCollection(dst) }; });
+            }).overlayRelationships({ foo: { link: ss.LinkToCollection(dst) } });
 
             expect(c.name).to.equal('fooey');
             expect(c.relatedCollection('foo').uri).to.equal(dst.uri);
