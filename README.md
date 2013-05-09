@@ -2,7 +2,7 @@ Zoetropic.js
 =============
 
 [![Build status](https://travis-ci.org/kennknowles/zoetropic.js.png)](https://travis-ci.org/kennknowles/zoetropic.js)
-[![Test coverage](https://coveralls.io/kennknowles/zoetropic.js/badge.png?branch=master)](https://coveralls.io/r/kennknowles/zoetropic.js)
+[![Test coverage](https://coveralls.io/repos/kennknowles/zoetropic.js/badge.png?branch=master)](https://coveralls.io/r/kennknowles/zoetropic.js)
 [![NPM version](https://badge.fury.io/js/zoetropic.png)](http://badge.fury.io/js/zoetropic)
 
 https://github.com/kennknowles/zoetropic.js
