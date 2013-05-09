@@ -886,33 +886,27 @@ define([
     var Api = function(implementation) {
         if (!(this instanceof Api)) return new Api(implementation);
 
-        var self = this;
+        var self = _(this).extend(implementation);
 
-        self.uri = implementation.uri || die('Api implementation missing required field `uri`');
-        self.debug = implementation.debug || false;
-        self.name = implementation.name || '(anonymous zoetropic.Api)';
+        self.uri || die('Api implementation missing required field `uri`');
+        self.debug || false;
+        self.name || '(anonymous zoetropic.Api)';
 
         ///// collections :: {String: Collection}
         //
         // A dictionary of collections by name.
 
-        self.collections = _(implementation.collections).isObject() ? implementation.collections : die('Api implementation missing required field `collections`');
+        _(self.collections).isObject() || die('Api implementation missing required field `collections`');
 
-        
         ///// fetch :: () -> Promise Api
         //
         // Returns a promise for the API with collections (and their schemas?) fetched from the server
 
-        self.fetch = implementation.fetch || die('Api implementation missing required method `fetch`');
-
-        // Unsupported, just for debugging. The only effect of relationships is to be overlayed on the collections
-        // so they should not be public
-        self.relationships = implementation.relationships;
+        self.fetch || die('Api implementation missing required method `fetch`');
 
 
         // Combinators
         // -----------
-        
         
         ///// withFields :: {...} -> Model
         //
@@ -1005,7 +999,7 @@ define([
         self.uri = args.uri || ('fake:' + Math.random());
         self.debug = args.debug || false;
         self.name = args.name || '(anonymous zoetropic.LocalApi)';
-        self.fetch = args.fetch || function(options) { return when.resolve(self); };
+        self.fetch = args.fetch || function(options) { console.log('foops'); return when.resolve(Api(self)); };
         self.collections = args.collections;
         self.relationships = _(args.relationships || {}).mapValues(function(relationshipsForCollection) {
             return _(relationshipsForCollection).mapValues(function(relationship, attribute) {
