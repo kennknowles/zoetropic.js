@@ -15,7 +15,7 @@ define([
 
     var expect = chai.expect, aztert = chai.assert;
 
-    describe("Collection", function() {
+    describe("Collection (interface)", function() {
         it("Provides .overlayRelated applies to all of its models", function() {
             var c = zt.LocalCollection({
                 models: {

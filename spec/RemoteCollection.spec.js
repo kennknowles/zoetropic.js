@@ -9,7 +9,7 @@ define([
     'chai',
     'claire',
     'when',
-], function(_, Backbone, zt, sinon, chai, claire, when) {
+], function(_, Backbone, z, sinon, chai, claire, when) {
     "use strict";
 
     var expect = chai.expect,
@@ -30,7 +30,7 @@ define([
             MockBackbone.Collection.foo = 'baz';
 
             // A RemoteCollectionBackend using this Backbone
-            var collection = zt.RemoteCollection({
+            var collection = z.RemoteCollection({
                 uri: '/some/fake/url',
                 data: {},
                 Backbone: MockBackbone
@@ -56,12 +56,21 @@ define([
             args.success({ models: bbModels });
         });
 
-        it(".create(...) returns a promise that resolves with the created RemoteModel", function() {
-
+        it("Has the name it is given", function() {
+            expect(z.RemoteCollection({ uri: 'asdf', name: 'foozle' }).name).to.equal('foozle');
+        });
+        
+        it("Can be given a new name", function() {
+            expect(z.RemoteCollection({ uri: 'asdf', name: 'foozle' }).withFields({ name: "bizzle" }).name).to.equal('bizzle');
         });
 
-        it(".create(...) returns a promise that rejects with any errors from the server", function() {
 
-        });
+        //it(".create(...) returns a promise that resolves with the created RemoteModel", function() {
+        //
+        //});
+        
+        //it(".create(...) returns a promise that rejects with any errors from the server", function() {
+        //
+        //});
     });
 });

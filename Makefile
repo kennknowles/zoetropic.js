@@ -18,9 +18,11 @@ all: optimized debug
 
 .PHONY: debug
 debug: # TODO
+	$(R_JS) -o build.js optimize=none
 
 .PHONY: optimized
 optimized: #TODO
+	$(R_JS) -o build.js
 
 .PHONY: jshint
 jshint:

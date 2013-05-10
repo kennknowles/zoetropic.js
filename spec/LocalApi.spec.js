@@ -43,8 +43,8 @@ define([
 
             when(api.fetch())
                 .then(function(nextApi) {
-                    expect( _(nextApi.collections.sort()).keys() ).to.deep.equal( _(api.collections.sort()).keys() );
-                    expect( _(nextApi.relationships.sort()).keys() ).to.deep.equal( _(api.collections.sort()).keys() );
+                    expect( _(nextApi.collections).keys().sort() ).to.deep.equal( _(api.collections).keys().sort() );
+                    expect( _(nextApi.relationships).keys().sort() ).to.deep.equal( _(api.collections).keys().sort() );
                     done();
                 })
                 .otherwise(function(err) {

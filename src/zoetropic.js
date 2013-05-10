@@ -26,6 +26,23 @@ define([
             }, {});
         }
     });
+
+    ///// Promise a
+    //
+    // then      :: a   -> Promise b
+    // otherwise :: Any -> Promise c
+
+    var Promise = function(contents) { 
+        return C.object({
+            then:      C.fun(contents, function() { return Promise(C.Any); }),
+            otherwise: C.fun(C.Any, function() { return Promise(C.Any) })
+        });
+    };
+
+    var CollectionBackend = C.object({
+        fetch: C.fun(C.object({ uri: C.Str, name: C.opt(C.Str), debug: C.opt(C.Str), data: C.opt(C.object({})) }),
+                     Promise(C.Any))
+    });
     
     // Secret value that indicates something should not bother to fetch but immediately
     // resolve its promise to an empty collection / missing model
@@ -34,8 +51,11 @@ define([
     // Secret value where the errors that do not belong on an attribute go
     var GLOBAL_ERRORS = '__all__';
 
-    // Really poor/basic serialization
+    // Really poor/basic function to make things JSON-friendly accordin to their own toJSON methods.
     var toJValue = function(value) { return JSON.parse(JSON.stringify(value)); };
+
+    
+
     
     // Random Tastypie support code
     var adjustTastypieError = function(err) {
@@ -57,26 +77,9 @@ define([
 
         var self = this;
 
-        ///// name :: String
-        //
-        // A name used in debugging messages
-        
         self.name = implementation.name || "(anonymous zoetropic.Model)";
-
-
-        ///// debug :: Boolean
-        //
-        // Whether to enabled more logging, etc (TODO: replace this with a smart logging library)
-
         self.debug = implementation.debug || false;
-
-        
-        ///// uri :: String
-        //
-        // The uri of this model - not used here but implementations should have them for identity
-
         self.uri = implementation.uri || die('Model implementaion missing mandatory field `uri`');
-
 
         ///// attributes :: Attributes
         //
@@ -84,15 +87,13 @@ define([
         // then it will be used, otherwise some fresh attributes are created.
 
         self.attributes = implementation.attributes || die('Model implementation missing mandatory field `attributes`');
-
         
-        ///// attributeErrors :: {String: [String]}
+        ///// errors :: {String: [String]}
         //
         // A mapping from attribute name to messages about validation problems with that attribute.
         // There is a special key __all__ that should have all of those and also global errors.
 
         self.errors = implementation.errors || die('Model implementation missing mandatory field `errors`');
-
         
         ///// relationships :: String -> Relationship
         //
@@ -100,14 +101,12 @@ define([
         // between collections for that attribute.
 
         self.relationships = _(implementation.relationships).isObject() ? implementation.relationships : die('Model implementation missing mandatory field `relationships`');
-
         
         ///// fetch :: () -> Promise Model
         //
         // A promise that resolves to the current model with attributes from the backend
 
         self.fetch = implementation.fetch || die('Model implementation missing required field `fetch`');
-
 
         ///// save :: Attributes -> Promise Model
         //
@@ -119,7 +118,6 @@ define([
         // Combinators
         // -----------
 
-        
         ///// withFields :: {...} -> Model
         //
         // The "master" combinator for overwriting fields of the Model constructor
@@ -127,7 +125,6 @@ define([
         self.withFields = function(implementationFields) {
             return Model( _({}).extend(implementation, implementationFields) );
         };
-        
 
         ///// overlayRelationships :: Relationships -> Model
         //
@@ -136,7 +133,6 @@ define([
         self.overlayRelationships = function(additionalRelationships) {
             return self.withFields({ relationships: _({}).extend(self.relationships, additionalRelationships) });
         };
-        
         
         ///// overlayAttributes :: Attributes -> Model
         //
@@ -167,12 +163,12 @@ define([
         self.overlayRelated = function(relations) {
             var overlayedCollections = {};
 
-            if ( _(relations).isArray() ) {
-                _(relations).each(function(attribute) { 
+            if ( _(relations).isObject() ) {
+                overlayedCollections = relations
+            } else {
+                _(arguments).each(function(attribute) { 
                     overlayedCollections[attribute] = self.relatedCollection(attribute);
                 });
-            } else {
-                overlayedCollections = relations
             }
 
             var overlayedAttributes = {};
@@ -330,7 +326,7 @@ define([
         var BBModelClass = BB.Model.extend({ url: self.uri });
 
         var fetchWithSelf = function(self, options) {
-            if (self.debug) console.debug( (options && options.name) || self.name, '-->');
+            if (self.debug) console.log( (options && options.name) || self.name, '-->');
             var doneFetching = when.defer();
             var bbModel = new BBModelClass();
 
@@ -349,7 +345,7 @@ define([
         };
 
         var saveWithSelf = function(self, attributes, options) {
-            if (self.debug) console.debug( (options && options.name) || self.name, '==>', attributes);
+            if (self.debug) console.log( (options && options.name) || self.name, '==>', attributes);
             var doneSaving = when.defer();
 
             var bbModel = new BBModelClass(attributes);
@@ -382,13 +378,13 @@ define([
     var Collection = function(implementation) {
         if (!(this instanceof Collection)) return new Collection(implementation);
 
-        var self = this;
+        var self = _(this).extend(implementation);
 
         ///// name :: String
         //
         // For debugging, etc
 
-        self.name = implementation.name || '(anonymous zoetropic.Collection)';
+        self.name || '(anonymous zoetropic.Collection)';
 
 
         ///// uri :: String
@@ -397,7 +393,7 @@ define([
         // It is not validated, but simply used to keep track of
         // some notion of identity.
 
-        self.uri = implementation.uri || die('Collection implementation missing required field `uri`.');
+        self.uri || die('Collection implementation missing required field `uri`.');
 
 
         ///// relationships :: {String: Relationship} 
@@ -405,34 +401,32 @@ define([
         // For each attribute of the models in the collection, there may 
         // be a relationship defined or no.
         
-        self.relationships = _(implementation.relationships).isObject() ? implementation.relationships : die('Collection implementation missing required field `relationships`.');
+        _(self.relationships).isObject() || die('Collection implementation missing required field `relationships`.');
 
-
-        ///// data :: Observable {String: *}
+        ///// data :: {...}
         //
-        // An observable mostly intended for use in passing a dictionary of
-        // querystring information for remote collections. It is actually
-        // simply uninterpreted by the Collection class, but passed to
-        // the underlying `fetch` implementation.
+        // An abstract and arbitrary value that will be used by fetch
 
-        self.data = _(implementation.data).isObject() ? implementation.data : die('Collection implementation missing required field `data`');
+        _(self.data).isObject() || die('Collection implementation missing required field `data`');
 
-        
         ///// models :: Models
         //
         // A collection of models by URI that supports intelligent
         // bulk update and relationships.
 
-        self.models = _(implementation.models).isObject() ? implementation.models : die('Collection implementation missing required field `models`');
-
+        _(self.models).isObject() || die('Collection implementation missing required field `models`');
         
-        ///// fetch :: () -> Promise Collection
+        ///// fetch :: {...} -> Promise Collection
         //
-        // For effective combinators, `fetchModels` exposes the
-        // functional core of a collection.
+        // For effective combinators, `fetch` exposes the
+        // functional core of a collection. Any of the fields of
+        // this collection can be overridden by the arguments
 
-        self.fetch = implementation.fetch || die('Collection implementation missing required field `fetchModels`');
-
+        implementation.fetch || die('Collection implementation missing required field `fetchModels`');
+        self.fetch = function(options) {
+            options = _({}).extend({ name: self.name, data: self.data, debug: self.data}, options);
+            return implementation.fetch(options);
+        }
 
         ///// create :: * -> Promise Model
         //
@@ -452,7 +446,14 @@ define([
         // The "master" combinator for overwriting fields of the Model constructor
         
         self.withFields = function(implementationFields) {
-            return Collection( _({}).extend(implementation, implementationFields) );
+            var newFields = _({}).extend(implementation, implementationFields);
+
+            return Collection( _({}).extend(newFields, {
+                fetch: function(options) {
+                    return self.fetch( _({}).extend({ name: newFields.name, uri: newFields.uri }, options) );
+                }
+            }))
+                                           
         };
         
         
@@ -463,7 +464,7 @@ define([
 
         self.relatedCollection = function(attr) { 
             var rel = self.relationships[attr] || die('No known relationship for ' + self.name + ' via attribute ' + attr);
-            return rel.link.resolve(self).withFields({ name: self.name + '.' + attr });
+            return rel.link.resolve(self).withFields({ name:  self.name + '.' + attr });
         };
         
        
@@ -530,77 +531,57 @@ define([
     // A stateless collection backend that always returns the models provided
     // upon construction.
 
-    var LocalCollection = function(args) {
-        if (!(this instanceof LocalCollection)) return new LocalCollection(args);
+    var LocalCollectionBackend = C.guard(C.fun(C.Any, CollectionBackend), function(args) {
+        if (!(this instanceof LocalCollectionBackend)) return new LocalCollectionBackend(args);
 
         var self = this;
 
-        args = args || {};
-        
-        self.uri = args.uri || ('fake:' + Math.random(1000).toString());
-        self.name = args.name || 'LocalCollection({uri:'+self.uri+'})';
-        self.data = args.data || {},
-        self.models = args.models || {},
-        self.fetch = function(data, options) { return when.resolve(self); };
-        self.create = function(modelArgs) { return when.resolve(LocalModel(modelArgs)); }
-        self.relationships = args.relationships || {};
+        self.models = (args && args.models) || {};
 
-        return Collection(self);
-    };
+        self.fetch = function(args) {
+            var uri  = args.uri || ('fake:' + Math.random(1000).toString());
+            var name = args.name || '(anonymous zoetropic.LocalCollectionBackend.fetch)';
+            var data = args.data || {};
+            
+            return when.resolve(self.models);
+        }
 
-    ///// RemoteCollection
+        self.create = function(modelArgs) { return when.resolve(LocalModel(modelArgs)); };
+
+        return self;
+    });
+
+
+    ///// RemoteCollectionBackend
     //
-    // A collection fetched over HTTP from its URI (which is thus a URL)
-    // and which saves & creates new models via PUT and POST.
+    // The backend for a Collection zoetrope is just a function to fetch and a function to save
 
-    var RemoteCollection = function(args) {
-        if (!(this instanceof RemoteCollection)) return new RemoteCollection(args);
+    var RemoteCollectionBackend = function(args) {
+        if (!(this instanceof RemoteCollectionBackend)) return new RemoteCollectionBackend(args);
 
         var self = this;
-        
-        self.uri = args.uri;
-        self.name = args.name || "(anonymous zoetropic.RemoteCollection)";
-        self.debug = args.debug || false;
-        self.data = args.data || {};
-        self.models = args.models || {};
-        self.relationships = args.relationships || {};
+        args = args || {};
+        var BB = args.Backbone || Backbone;
 
-        // Dependency injected Backbone for doing the actual HTTP biz
-        var BB = args.Backbone || Backbone; // For swapping out network library if desired, and for testing
-        var BBCollectionClass = BB.Collection.extend({ 
-            url: self.uri,
-            parse: function(response) { return response.objects; }
-        });
-
-        // Helper in common between fetch & create
-        var modelInThisCollection = function(args) {
-            return RemoteModel({ 
-                debug: self.debug,
-                uri: args.uri, 
-                name: self.name + '[' + args.uri + ']',
-                state: 'ready',
-                attributes: args.attributes,
-                Backbone: BB
-            });
-        };
-        
-
-        ///// fetch :: {...} -> Promise Collection
+        ///// fetch :: {...} -> Promise {URI: Model}
         //
-        // A promise that resolves to this collection with the fetched models.
-    
-        self.fetch = function(data, options) {
-            data = data || {};
+        // A promise that resolves to the models retrieved by URI
 
-            if (self.debug) console.debug((options && options.name) || self.name, '-->', self.uri, '?', data); //URI().query(self.data()).query());
+        self.fetch = function(args) {
+            var uri   = args.uri   || die('Missing required arg `uri` for RemoteCollectionBackend.fetch');
+            var name  = args.name  || '(anonymous zoetropic.RemoteCollectionBackend.fetch)';
+            var debug = args.debug || false;
+            var data  = args.data  || {};
+
+            if (debug) console.log(name, '-->', uri, '?', data);
             
             // The special value NOFETCH is used to indicate with certainty that the result
             // of the fetch will be empty, so we should elide hitting the network. This occurs
             // somewhat often during automatic dependency propagation and is no problem.
 
             if (_(data).any(function(v) { return v === NOFETCH; })) {
-                if (self.debug) console.debug((options && options.name) || self.name, '<--', self.uri, '(not bothering)');
-                return when.resolve(self.withFields({ models: {} })); // Equivalent to having fetched instantaneously and gotten no results
+                if (debug) console.log(name, '<--', uri, '(NOFETCH)');
+                return when.resolve([]);
             }
             
             // In order to be simple and stateless, we create a new Backbone Collection 
@@ -609,54 +590,54 @@ define([
             
             var doneFetching = when.defer();
             
+            var BBCollectionClass = BB.Collection.extend({ url: uri, parse: function(response) { return response.objects; } });
             var bbCollection = new BBCollectionClass();
             bbCollection.fetch({ 
                 traditional: true,
                 data: data,
+                error: function() { doneFetching.reject(); },
+
                 success: function(collection, response) { 
-                    if (self.debug) console.debug((options && options.name) || self.name, '<--', '(' + _(collection.models).size() + ' results)');
-                    
-                    var newModels = {};
-                
+                    if (debug) console.log(name, '<--', '(' + _(collection.models).size() + ' results)');
+
+                    var fetchedModels = {};
+
                     _(collection.models).each(function(bbModel) {
                         var uri = bbModel.get('resource_uri'); 
-                        newModels[uri] = modelInThisCollection({
-                            uri: uri,
-                            attributes: bbModel.attributes
+                        fetchedModels[uri] = RemoteModel({ 
+                            debug: debug,
+                            uri: uri, 
+                            name: name + '[' + uri + ']',
+                            attributes: bbModel.attributes,
+                            Backbone: BB
                         });
                     });
 
-                    doneFetching.resolve(Collection(self).withFields({ models: newModels }));
-                },
-
-                error: function() {
-                    doneFetching.reject();
+                    doneFetching.resolve(fetchedModels);
                 }
             });
-            
+
             return doneFetching.promise;
         };
 
+        ///// create :: {...} -> Promise Model
         
-        ///// create :: args -> Promise Model
-        //
-        // Given the arguments for creating a LocalModel, returns a promise
-        // for what that model's attributes will result in when persisted to
-        // the server.
-        //
-        // The args are really just debug, name, attributes.
-
         self.create = function(args) { 
+            var uri   = args.uri   || die('Missing required arg `uri` for RemoteCollectionBackend.fetch');
+            var name  = args.name  || '(anonymous zoetropic.RemoteCollectionBackend.fetch)';
+            var debug = args.debug || false;
+
             var doneCreating = when.defer();
             
-            var payload = toJValue(LocalModel(args));
-            if (self.debug) console.debug(self.name, '==>', payload);
+            var payload = toJValue(LocalModel({ attributs: args.attribtes }))
+            if (debug) console.log(name, '==>', payload);
             
+            var BBCollectionClass = BB.Collection.extend({ url: uri, parse: function(response) { return response.objects; } });
             var bbCollection = new BBCollectionClass();
             bbCollection.create(payload, {
                 wait: true,
                 success: function(newModel, response, options) { 
-                    if (self.debug) console.debug(self.name, '<==', newModel);
+                    if (debug) console.log(name, '<==', newModel);
 
                     var createdModel = modelInThisCollection({ 
                         uri: newModel.get('resource_uri'), // Requires tastypie always_return_data = True; could/should fallback on Location header
@@ -673,9 +654,90 @@ define([
             
             return doneCreating.promise;
         }
-        
-        return Collection(self);
+
+        return self;
     };
+
+
+
+
+    var CollectionForBackend = function(args) {
+        var self = {};
+
+        var backend = args.backend || die('Missing required arg `backend` for ColletoinForBackend');
+
+        self.uri = args.uri || die('Missing required args `uri` for CollectionsForBackend');
+        self.name = args.name || '(anonymous zoetropic.CollectionForBackend)';
+        self.debug = args.debug || false;
+        self.data = args.data || {};
+        self.models = args.models || {};
+        self.relationships = args.relationships || {};
+
+        ////// fetch :: () -> Collection
+        //
+        // Returns a new collection just like this one but with the models retrieved from the backend
+        
+        self.fetch = function(options) {
+            var defaults = { uri: self.uri, name: self.name, debug: self.debug, data: self.data };
+
+            options = _({}).extend(defaults, options)
+
+            return when(backend.fetch(options))
+                .then(function (newModels) {
+                    return CollectionForBackend({
+                        backend: backend,
+                        uri: self.uri,
+                        name: self.name,
+                        debug: self.debug,
+                        data: self.data,
+                        models: newModels,
+                        relationships: self.relationships
+                    });
+                });
+        };
+
+        ////// create :: {...} -> Promise Model
+        //
+        // Return a new model in this collection
+        
+        self.create = function(args) { 
+            return backend.create({ uri: self.uri, name: self.name, debug: self.debug, attributes: self.attributes });
+        };
+
+        return Collection(self);
+    }
+
+
+    ///// RemoteCollection
+    //
+    // A collection fetched over HTTP from its URI (which is thus a URL)
+    // and which saves & creates new models via PUT and POST.
+
+    var RemoteCollection = function(args) {
+        args = args || {};
+        return CollectionForBackend({
+            uri: args.uri,
+            name: args.name || '(anonymous zoetropic.RemoteCollection)',
+            debug: args.debug || false,
+            data: args.data || {},
+            models: args.models || {},
+            relationships: args.relationships || {},
+            backend: RemoteCollectionBackend({ Backbone: args.Backbone })
+        });
+    };
+
+    var LocalCollection = function(args) {
+        args = args || {};
+        return CollectionForBackend({
+            uri: args.uri || ('fake:' + Math.random(1000)),
+            name: args.name || '(anonymous zoetropic.LocalCollection)',
+            debug: args.debug || false,
+            data: args.data || {},
+            models: args.models,
+            relationships: args.relationships || {},
+            backend: LocalCollectionBackend()
+        });
+    }
 
     ///// Link = { resolve: Collection -> Collection }
     //
@@ -999,8 +1061,8 @@ define([
         self.uri = args.uri || ('fake:' + Math.random());
         self.debug = args.debug || false;
         self.name = args.name || '(anonymous zoetropic.LocalApi)';
-        self.fetch = args.fetch || function(options) { console.log('foops'); return when.resolve(Api(self)); };
-        self.collections = args.collections;
+        self.fetch = args.fetch || function(options) { return when.resolve(Api(self)); };
+        self.collections = args.collections || {};
         self.relationships = _(args.relationships || {}).mapValues(function(relationshipsForCollection) {
             return _(relationshipsForCollection).mapValues(function(relationship, attribute) {
                 return {
@@ -1044,18 +1106,18 @@ define([
             var doneFetching = when.defer();
             var bbModel = new BBModelClass();
 
-            if (self.debug) console.debug((options && options.name) || self.name, '-->', self.uri);
+            if (self.debug) console.log((options && options.name) || self.name, '-->', self.uri);
             
             bbModel.fetch({
                 success: function(bbModelFromServer, response) { 
-                    if (self.debug) console.debug((options && options.name) || self.name, '<--', self.uri);
+                    if (self.debug) console.log((options && options.name) || self.name, '<--', self.uri);
                     
-                    var additionalCollections = _(bbModelFromServer.attributes).mapValues(function(metadata) {
+                    var additionalCollections = _(bbModelFromServer.attributes).mapValues(function(metadata, name) {
                         return RemoteCollection({ 
                             name: name,
                             debug: self.debug,
                             uri: metadata.list_endpoint,
-                            schema_url: metadata.schema,
+                            schema_url: metadata.schema
                         });
                     });
 
@@ -1091,6 +1153,9 @@ define([
         // Collections
         LocalCollection: LocalCollection,
         RemoteCollection: RemoteCollection,
+
+        // Backends
+        LocalCollectionBackend: LocalCollectionBackend,
 
         // Links
         LinkToCollection: LinkToCollection,

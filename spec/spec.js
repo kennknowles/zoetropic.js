@@ -8,6 +8,7 @@ define([
     './FilterReference.spec',
     './LocalApi.spec',
     './LocalCollection.spec',
+    './LocalCollectionBackend.spec',
     './LocalModel.spec',
     './Model.spec',
     './RemoteModel.spec',
