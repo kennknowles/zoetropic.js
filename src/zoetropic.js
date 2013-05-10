@@ -629,7 +629,7 @@ define([
 
             var doneCreating = when.defer();
             
-            var payload = toJValue(LocalModel({ attributs: args.attribtes }))
+            var payload = toJValue(LocalModel({ attributes: args.attributes }))
             if (debug) console.log(name, '==>', payload);
             
             var BBCollectionClass = BB.Collection.extend({ url: uri, parse: function(response) { return response.objects; } });
@@ -639,9 +639,12 @@ define([
                 success: function(newModel, response, options) { 
                     if (debug) console.log(name, '<==', newModel);
 
-                    var createdModel = modelInThisCollection({ 
-                        uri: newModel.get('resource_uri'), // Requires tastypie always_return_data = True; could/should fallback on Location header
-                        attributes: newModel.attributes 
+                    var createdModel = RemoteModel({ 
+                        debug: debug,
+                        uri: newModel.get('resource_uri'),
+                        name: name + '[' + uri + ']',
+                        attributes: newModel.attributes,
+                        Backbone: BB
                     });
 
                     doneCreating.resolve(createdModel);
@@ -698,10 +701,16 @@ define([
 
         ////// create :: {...} -> Promise Model
         //
-        // Return a new model in this collection
+        // Return a new model in this collection.
+        // TODO: Be very liberal about optional args w/ overwrite/defaults, etc.
         
         self.create = function(args) { 
-            return backend.create({ uri: self.uri, name: self.name, debug: self.debug, attributes: self.attributes });
+            return backend.create({ 
+                uri: self.uri, 
+                name: self.name, 
+                debug: self.debug, 
+                attributes: args.attributes 
+            });
         };
 
         return Collection(self);
