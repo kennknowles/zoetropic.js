@@ -331,12 +331,12 @@ define([
             var bbModel = new BBModelClass();
 
             bbModel.fetch({ 
-                success: function(model, response) { 
+                success: function(model, response, options) { 
                     doneFetching.resolve(self.withFields({
                         attributes: model.attributes
                     }))
                 },
-                error: function() {
+                error: function(model, xhr, options) {
                     doneFetching.reject(); // TODO: errors
                 }
             });
@@ -351,7 +351,10 @@ define([
             var bbModel = new BBModelClass(attributes);
 
             bbModel.save({}, { 
-                success: function() { doneSaving.resolve(); },
+                success: function(model, response, options) {
+                    // Errors?
+                    doneSaving.resolve(self); 
+                },
 
                 error: function(model, xhr, options) { 
                     var err = JSON.parse(xhr.responseText);
