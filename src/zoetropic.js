@@ -60,8 +60,10 @@ define([
     // Random Tastypie support code
     var adjustTastypieError = function(err) {
         // Sometimes it is a dictionary keyed by class name, with a list, other times, just a one-element dict with {"error": <some string>}
-        if ( _(_(err).values()[0]).isString() ) {
-            return _.object([GLOBAL_ERRORS, _(err).values()]);
+        if ( _( _(err).values()[0] ).isString() ) {
+            var errs = {};
+            errs[GLOBAL_ERRORS] = _(err).values();
+            return errs;
         } else {
             return _(err).values()[0];
         }
@@ -654,7 +656,8 @@ define([
                 },
                 error: function(model, xhr, options) {
                     var err = JSON.parse(xhr.responseText);
-                    doneCreating.reject(adjustTastypieError(err));
+                    var fixedErr = adjustTastypieError(err);
+                    doneCreating.reject(fixedErr);
                 }
             });
             
