@@ -96,5 +96,40 @@ define([
             var m3 = m.overlayRelated({foo: c});
             expect(m3.attributes.foo.uri).to.equal(m2.uri);
         });
+        
+        it("Model.overlayRelated keeps the overlays when fetched or saved", function(done) {
+            var m = zt.LocalModel({ 
+                name: 'foo',
+                uri: 'bizzle',
+                attributes: {"foo": 'baz'},
+                fetch: function() { },
+                save: function() { }
+            });
+
+            var m2 = zt.LocalModel({ attributes: { resource_uri: 'baz' } });
+            var m2other = zt.LocalModel();
+            var c = zt.LocalCollection({
+                models: {
+                    baz: m2,
+                    boing: m2other
+                }
+            });
+            
+            var m3 = m.overlayRelated({foo: c});
+            expect(m3.attributes.foo.uri).to.equal(m2.uri);
+
+            m3.fetch()
+                .then(function(m4) {
+                    expect(m4.attributes.foo.uri).to.equal(m2.uri);
+                    return m3.save(m3.attributes);
+                })
+                .then(function(m3saved) {
+                    expect(m3saved.attributes.foo.uri).to.equal(m2.uri);
+                    done();
+                })
+                .otherwise(function(error) {
+                    done(error);
+                });
+        });
     });
 });

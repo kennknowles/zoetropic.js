@@ -88,7 +88,7 @@ define([
         // If the implementation passes in some attributes that are any sort of observable,
         // then it will be used, otherwise some fresh attributes are created.
 
-        self.attributes = implementation.attributes || die('Model implementation missing mandatory field `attributes`');
+        self.attributes = _(implementation.attributes).isObject() ? implementation.attributes : die('Model implementation missing mandatory field `attributes`');
         
         ///// errors :: {String: [String]}
         //
@@ -183,16 +183,23 @@ define([
             
             return self.overlayAttributes(overlayedAttributes).withFields({
                 fetch: function(options) {
-                    self.fetch(options)
+                    return self.fetch(options)
                         .then(function(fetchedSelf) {
                             return when.resolve(fetchedSelf.overlayRelated(overlayedCollections));
                         });
                 },
                 
                 save: function(attributes, options) {
-                    self.save(attributes, options)
+                    // HACK: Need to add the inverse of a Reference to it, but not yet designed/implemented
+                    var underlyingAttributes = _(attributes).clone();
+                    _(overlayedCollections).each(function(collection, attribute) {
+                        var relationship = self.relationships[attribute] || { deref: ToOneReference({from: attribute}) };
+                        underlyingAttributes[attribute] = attributes[attribute].attributes.resource_uri;
+                    });
+
+                    return self.save(underlyingAttributes, options)
                         .then(function(savedSelf) {
-                            return when.resolve(savedSelf.overlayRelated(overlayCollections));
+                            return when.resolve(savedSelf.overlayRelated(overlayedCollections));
                         });
                 }
             });
@@ -296,9 +303,12 @@ define([
 
         self.relationships = args.relationships || {};
 
-        self.fetch = function(options) { return when.resolve(self); };
+        self.fetch = function(options) { return when.resolve(Model(self)); };
 
-        self.save = function(attributes, options) { return when.resolve(Model(self).withFields({ attributes: attributes })); };
+        self.save = function(attributes, options) { 
+            var newAttributes = attributes || {};
+            return when.resolve(Model(self).withFields({ attributes: newAttributes })); 
+        };
 
         Object.freeze(self);
 
@@ -349,7 +359,7 @@ define([
         var saveWithSelf = function(self, attributes, options) {
             if (self.debug) console.log( (options && options.name) || self.name, '==>', attributes);
             var doneSaving = when.defer();
-
+            
             var bbModel = new BBModelClass(attributes);
 
             bbModel.save({}, { 
