@@ -344,7 +344,7 @@ define([
 
             bbModel.fetch({ 
                 success: function(model, response, options) { 
-                    doneFetching.resolve(self.withFields({
+                    doneFetching.resolve(Model(self).withFields({
                         attributes: model.attributes
                     }))
                 },
