@@ -605,7 +605,14 @@ define([
             
             var doneFetching = when.defer();
             
-            var BBCollectionClass = BB.Collection.extend({ url: uri, parse: function(response) { return response.objects; } });
+            var BBCollectionClass = BB.Collection.extend({ 
+                url: uri, 
+                parse: function(response) {
+                    this.metadata = response.meta;
+                    return response.objects; 
+                } 
+            });
+
             var bbCollection = new BBCollectionClass();
             bbCollection.fetch({ 
                 traditional: true,
@@ -615,11 +622,14 @@ define([
                 success: function(collection, response) { 
                     if (debug) console.log(name, '<--', '(' + _(collection.models).size() + ' results)');
 
-                    var fetchedModels = {};
+                    var fetchedResult = {
+                        models: {},
+                        metadata: collection.metadata
+                    };
 
                     _(collection.models).each(function(bbModel) {
                         var uri = bbModel.get('resource_uri'); 
-                        fetchedModels[uri] = RemoteModel({ 
+                        fetchedResult.models[uri] = RemoteModel({ 
                             debug: debug,
                             uri: uri, 
                             name: name + '[' + uri + ']',
@@ -628,7 +638,7 @@ define([
                         });
                     });
 
-                    doneFetching.resolve(fetchedModels);
+                    doneFetching.resolve(fetchedResult);
                 }
             });
 
@@ -690,6 +700,7 @@ define([
         self.debug = args.debug || false;
         self.data = args.data || {};
         self.models = args.models || {};
+        self.metadata = args.metadata || {};
         self.relationships = args.relationships || {};
 
         ////// fetch :: () -> Collection
@@ -702,14 +713,15 @@ define([
             options = _({}).extend(defaults, options)
 
             return when(backend.fetch(options))
-                .then(function (newModels) {
+                .then(function (fetchedResult) {
                     return CollectionForBackend({
                         backend: backend,
                         uri: self.uri,
                         name: self.name,
                         debug: self.debug,
                         data: self.data,
-                        models: newModels,
+                        metadata: fetchedResult.metadata,
+                        models: fetchedResult.models,
                         relationships: self.relationships
                     });
                 });
@@ -746,6 +758,7 @@ define([
             debug: args.debug || false,
             data: args.data || {},
             models: args.models || {},
+            metadata: args.metadata || {},
             relationships: args.relationships || {},
             backend: RemoteCollectionBackend({ Backbone: args.Backbone })
         });
@@ -759,6 +772,7 @@ define([
             debug: args.debug || false,
             data: args.data || {},
             models: args.models,
+            metadata: args.metadata || {},
             relationships: args.relationships || {},
             backend: LocalCollectionBackend()
         });
