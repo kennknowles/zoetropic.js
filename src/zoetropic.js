@@ -553,12 +553,17 @@ define([
 
         self.models = (args && args.models) || {};
 
+        self.metadata = (args && args.metadata) || {};
+
         self.fetch = function(args) {
             var uri  = args.uri || ('fake:' + Math.random(1000).toString());
             var name = args.name || '(anonymous zoetropic.LocalCollectionBackend.fetch)';
             var data = args.data || {};
             
-            return when.resolve(self.models);
+            return when.resolve({
+                models: self.models,
+                metadata: self.metadata
+            });
         }
 
         self.create = function(modelArgs) { return when.resolve(LocalModel(modelArgs)); };
@@ -774,7 +779,10 @@ define([
             models: args.models,
             metadata: args.metadata || {},
             relationships: args.relationships || {},
-            backend: LocalCollectionBackend()
+            backend: LocalCollectionBackend({ 
+                models: args.models || {}, 
+                metadata: args.metadata || {} 
+            })
         });
     }
 
