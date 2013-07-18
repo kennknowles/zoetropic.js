@@ -19,8 +19,8 @@ define([
             var backend = z.LocalCollectionBackend({ models: { foo: m } });
 
             var promise = backend.fetch({ uri: '/fake/uri' });
-            when(promise).then(function (fetchedModels)  {
-                expect(fetchedModels.foo.uri).to.equal(m.uri);
+            when(promise).then(function (fetchedResult)  {
+                expect(fetchedResult.models.foo.uri).to.equal(m.uri);
                 done();
             });
         });
