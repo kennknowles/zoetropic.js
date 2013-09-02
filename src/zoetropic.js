@@ -566,7 +566,20 @@ define([
             });
         }
 
-        self.create = function(modelArgs) { return when.resolve(LocalModel(modelArgs)); };
+        self.create = function(modelArgs) { 
+            // If no URI passed in (the normal case) just generate one by choosing a random id
+            if ( !modelArgs.attributes.resource_uri ) {
+                modelArgs = _(modelArgs).clone();
+                modelArgs.attributes = _(modelArgs.attributes).clone();
+
+                if ( !modelArgs.attributes.id )
+                    modelArgs.attributes.id = Math.random(1000);
+                
+                modelArgs.attributes.resource_uri = 'fake:' + modelArgs.attributes.id.toString();
+            }
+
+            return when.resolve(LocalModel(modelArgs)); 
+        };
 
         return self;
     });
