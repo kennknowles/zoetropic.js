@@ -26,7 +26,7 @@ optimized: #TODO
 
 .PHONY: jshint
 jshint:
-	$(JSHINT) --verbose src test
+	$(JSHINT) --verbose lib test
 
 .PHONY: test
 test: jshint
@@ -40,7 +40,7 @@ coverage: jshint lib-cov
 # Actual file targets
 #
 
-lib-cov: src/zoetropic.js 
+lib-cov: lib/zoetropic.js 
 	rm -rf lib-cov
 	mkdir -p lib-cov
-	$(ISTANBUL) instrument --output lib-cov --no-compact --variable global.__coverage__ src
+	$(ISTANBUL) instrument --output lib-cov --no-compact --variable global.__coverage__ lib

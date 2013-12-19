@@ -3,7 +3,7 @@ requirejs.config({
     // but I do it for use *in the browser*, because it is just the test suite
     paths: {
         "zoetropic"          : "../lib/zoetropic",
-        "jquery"             : "vendor/jquery-1.8.2"
+    //    "jquery"             : "vendor/jquery-1.8.2"
     },
     packages: [
         { "name": "backbone",     "main": "backbone.js",              "location": "../node_modules/backbone"                  },
@@ -22,7 +22,7 @@ requirejs.config({
     shim: {
         "backbone": { 
             exports: "Backbone",
-            deps: ["underscore", "jquery"]
+            deps: ["underscore"]
         },
         "boo": {
             exports: "boo"
