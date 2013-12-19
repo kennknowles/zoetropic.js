@@ -10,7 +10,6 @@ requirejs.config({
         { "name": "boo",          "main": "boo.js",                   "location": "vendor/boo-1.2.4/lib"                      },
         { "name": "chai",         "main": "chai.js",                  "location": "../node_modules/chai"                      },
         { "name": "claire",       "main": "index.js",                 "location": "vendor/claire-0.3.2"                       },
-        { "name": "contracts-js", "main": "contracts.js",             "location": "../node_modules/contracts-js/lib"          },
         { "name": "flaw",         "main": "index.js",                 "location": "vendor/flaw-0.1.0"                         },
         { "name": "mocha",        "main": "mocha.js",                 "location": "../node_modules/mocha"                     },
         { "name": "prelude-ls",   "main": "prelude.js",               "location": "vendor/prelude-ls-0.6.0"                   },
@@ -27,9 +26,6 @@ requirejs.config({
         },
         "boo": {
             exports: "boo"
-        },
-        "contracts-js": {
-            exports: ""
         },
         "jquery": {
             exports: "$"
