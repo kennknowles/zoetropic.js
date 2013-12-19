@@ -26,15 +26,15 @@ optimized: #TODO
 
 .PHONY: jshint
 jshint:
-	$(JSHINT) --verbose src spec
+	$(JSHINT) --verbose src test
 
 .PHONY: test
 test: jshint
-	$(MOCHA) --reporter dot ./spec/mocha-spec-runner.js
+	$(MOCHA) --reporter dot ./test/mocha-spec-runner.js
 
 .PHONY: coverage
 coverage: jshint lib-cov
-	ISTANBUL_REPORTERS=text-summary,html,lcov ZOETROPIC_PATH=lib-cov/zoetropic $(MOCHA) --reporter mocha-istanbul ./spec/mocha-spec-runner.js
+	ISTANBUL_REPORTERS=text-summary,html,lcov ZOETROPIC_PATH=lib-cov/zoetropic $(MOCHA) --reporter mocha-istanbul ./test/mocha-spec-runner.js
 
 #
 # Actual file targets
