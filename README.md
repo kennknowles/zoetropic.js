@@ -8,35 +8,30 @@ Zoetropic.js
 
 https://github.com/kennknowles/zoetropic.js
 
-A value-oriented backend library.
+A futuristic Javascript library for interacting with REST APIs.
 
 Quick Intro
 -----------
 
-This module builds upon Backbone by using promises (via When) to remove callbacks
-and mutation from the public API, for a straightforward value-oriented way of accessing
-a backend.
+Zoetropic interacts with REST APIs in a value-oriented way using _promises_ (close cousins of _futures_).
 
-The core constructs are the usual:
+Zoetropic features the following core concepts:
 
  - `Model`: A single resource such as you might find at a url http://api.example.com/users/45
  - `Collection`: A compound resource, generally with filtering, such as might be found at http://api.example.com/users/
  - `Relationship`: Describes how to move from one `Collection` to another.
  - `Api`: A root of the API that stores the `Collection`s by name, such as might be found at http://api.example.com/
 
-What you may not find elsewhere:
+For advanced use, it also has two new concepts to aid in relationship management:
 
- - Value-oriented programming, which means when you fetch or save, you get new data, it does not alter any existing object.
- - Fluent interfaces, such as `RemoteCollection({ url: url }).withData({age: 45}).withRelatedSubresources('friends')`
- - A class to represent your root `Api`, to leverage your [HATEOS](http://en.wikipedia.org/wiki/HATEOAS) backend. 
+ - `Link`: A link from one collection to another. Analogous to a simple hyperlink, but for sets of URLs.
+ - `Reference`: A reference from one object to one or many objects in another collections. This is complementary to `Link`.
 
 
-Interface
----------
+Terse Interface
+---------------
 
-Each "interface" is a function that wraps an implementation to provide combinators in a fluent style, as with underscore and jQuery.
-
-Here is a concise summary of the interfaces, where `*` means "anything" and everything else is as you might expect.
+The interface of zoetropic in a nutshell:
 
 ```javascript
 URL = String
