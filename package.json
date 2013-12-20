@@ -1,6 +1,6 @@
 {
     "name": "zoetropic",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "description": "A futuristic library for interacting with REST APIs",
     "author": "Kenneth Knowles <kenn.knowles@gmail.com> (http://kennknowles.com)",
     "license": "Apache 2.0",
