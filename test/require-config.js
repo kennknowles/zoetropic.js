@@ -29,8 +29,8 @@ requirejs.config({
         "jquery": {
             exports: "$"
         },
-        "mocha": { 
-            exports: "mocha" 
+        "mocha": {
+            exports: "mocha"
         },
         "sinon": {
             exports: "sinon"

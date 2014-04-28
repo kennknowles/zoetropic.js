@@ -13,6 +13,7 @@ define([
     './Model.spec',
     './RemoteModel.spec',
     './RemoteCollection.spec',
+    './RemoteApi.spec',
     './ToManyReference.spec',
     './ToOneReference.spec',
     './UrlLink.spec',
