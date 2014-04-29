@@ -1,21 +1,21 @@
 {
     "name": "zoetropic",
-    "version": "0.1.1",
+    "version": "0.2.0",
     "description": "A futuristic library for interacting with REST APIs",
-    "author": "Kenneth Knowles <kenn.knowles@gmail.com> (http://kennknowles.com)",
+    "author": "Arborbridge Engineering <engineering@arborbridge.com>",
     "license": "Apache 2.0",
-    "homepage": "https://github.com/kennknowles/zoetropic.js",
+    "homepage": "https://github.com/arborbridge/zoetropic.js",
     "keywords": [
         "REST",
         "Backbone",
         "Promise"
     ],
     "issues": {
-        "url": "https://github.com/kennknowles/zoetropic.js/issues"
+        "url": "https://github.com/arborbridge/zoetropic.js/issues"
     },
     "repository": {
         "type": "git",
-        "url": "https://github.com/kennknowles/zoetropic.js.git"
+        "url": "https://github.com/arborbridge/zoetropic.js.git"
     },
     "dependencies": {
         "amdefine": ">=0.1.0",
